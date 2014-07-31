@@ -36,7 +36,9 @@ data Op = P PointerOp | B ByteOp | S SideEffectOp | L Loop
 type Program = [Op]
 
 program :: Parser Program
-program = many operations <* eof
+program = do
+  skipMany space
+  sepEndBy operations spaces  <* eof
 
 operations :: Parser Op
 operations = do

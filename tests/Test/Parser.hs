@@ -48,10 +48,15 @@ prop_CantParseBadSymbols :: Code -> Code -> Bool
 prop_CantParseBadSymbols c1 c2 =
   (isLeft . parseProgram . pack) $ unCode c1 ++ ['~'] ++ unCode c2
 
+prop_ParseBlanks :: Bool
+prop_ParseBlanks =
+  (isRight . parseProgram . pack) "\n   +\n   +  \n"
+
 properties :: [(String, Prop)]
 properties =
   [ ("parse empty", Prop prop_ParseEmptyProgram)
    ,("parse simple ops", Prop prop_BasicProgram)
    ,("parse arbitrary program", Prop prop_CanParseGenericProgram)
    ,("can't parse bad symbols program", Prop prop_CantParseBadSymbols)
+   ,("parses spaces and newlines", Prop prop_ParseBlanks)
   ]
