@@ -50,7 +50,21 @@ prop_CantParseBadSymbols c1 c2 =
 
 prop_ParseBlanks :: Bool
 prop_ParseBlanks =
-  (isRight . parseProgram . pack) "\n   +\n   +  \n"
+  either (const False) (==expected) $ parseProgram input
+  where input = pack "\n   +\n   -  \n"
+        expected = [B Inc, B Dec]
+
+prop_GoodLoop :: Bool
+prop_GoodLoop =
+  either (const False) (==expected) $ parseProgram input
+  where input = pack "\n   + [+><-\n [-+]\n - ]   +  \n"
+        expected = [ B Inc
+                    ,L (Loop [ B Inc, P IncP, P DecP, B Dec
+                              ,L (Loop [B Dec, B Inc])
+                              ,B Dec
+                             ])
+                    ,B Inc]
+
 
 properties :: [(String, Prop)]
 properties =
@@ -59,4 +73,5 @@ properties =
    ,("parse arbitrary program", Prop prop_CanParseGenericProgram)
    ,("can't parse bad symbols program", Prop prop_CantParseBadSymbols)
    ,("parses spaces and newlines", Prop prop_ParseBlanks)
+   ,("parses loops", Prop prop_GoodLoop)
   ]

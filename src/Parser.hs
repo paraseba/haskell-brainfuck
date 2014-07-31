@@ -38,10 +38,16 @@ type Program = [Op]
 program :: Parser Program
 program = do
   skipMany space
-  sepEndBy operations spaces  <* eof
+  sepEndBy operation spaces
 
-operations :: Parser Op
-operations = do
+fullProgram :: Parser Program
+fullProgram = program <* eof
+
+operation :: Parser Op
+operation = simpleOp <|> loop
+
+simpleOp :: Parser Op
+simpleOp = do
   c <- (char '>') <|> (char '<') <|> (char '+') <|>
        (char '-') <|> (char '.') <|> (char ',')
   return $ case c of
@@ -52,5 +58,10 @@ operations = do
     '.' -> S PutByte
     ',' -> S GetByte
 
+loop :: Parser Op
+loop = do
+  p <- between (char '[') (char ']') program
+  return $ L (Loop p)
+
 parseProgram :: BS.ByteString -> Either ParseError Program
-parseProgram s = runP program () "" s
+parseProgram s = runP fullProgram () "" s
