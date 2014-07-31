@@ -4,6 +4,7 @@ import Test.QuickCheck
 import Debug.Trace
 import Control.Monad.State
 import Data.Int (Int8)
+import Data.Char (chr)
 
 import Test.Helper
 import Parser
@@ -62,6 +63,26 @@ prop_DecLoop =
         res = execState (eval simulator program) (emptyState 0)
         out = simStateOutput res
 
+prop_EvalString :: Bool
+prop_EvalString =
+  out == [2]
+  where program = "++."
+        res = execState (evalStr simulator program) (emptyState 42)
+        out = simStateOutput res
+
+-- taken from http://www.hevanet.com/cristofd/brainfuck/
+squares :: [Char]
+squares = "++++[>+++++<-]>[<+++++>-]+<+[\n    >[>+>+<<-]++>>[<<+>>-]>>>[-]++>[-]+\n    >>>+[[-]++++++>>>]<<<[[<++++++++<++>>-]+<.<[>----<-]<]\n    <<[>>>>>[>>>[-]+++++++++<[>-<-]+++++++++>[-[<->-]+[<<<]]<[>+<-]>]<<-]<<-\n]\n"
+
+prop_Squares :: Bool
+prop_Squares =
+  toString out == expected
+  where program = squares
+        res = execState (evalStr simulator program) (emptyState 42)
+        out = simStateOutput res
+        expected = concat [show (n*n) ++ "\n" | n <- [0..100]]
+        toString = map (chr . fromIntegral)
+
 properties :: [(String, Prop)]
 properties =
   [ ("eval empty program", Prop prop_EmptyProgram)
@@ -70,6 +91,9 @@ properties =
    ,("eval put byte", Prop prop_PutByte)
    ,("eval get byte", Prop prop_GetByte)
    ,("eval simple decrementing loop", Prop prop_DecLoop)
+
+   ,("eval string", Prop prop_EvalString)
+   ,("eval squares program", Prop prop_Squares)
   ]
 
 

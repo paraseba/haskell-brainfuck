@@ -1,5 +1,5 @@
 module Eval (
-  eval
+  eval, evalBS, evalStr
   ,Machine
   ,tape, putByte, getByte
   ,simulator, SimState (SimState), simStateOutput
@@ -9,6 +9,8 @@ module Eval (
 import Data.Int (Int8)
 import Data.List (foldl')
 import Control.Monad.State
+import qualified Data.ByteString.Lazy as BS
+import qualified Data.ByteString.Lazy.Char8 as BSC
 import Debug.Trace
 
 import Parser
@@ -29,6 +31,14 @@ eval :: Monad m => Machine m -> Program -> m (Machine m)
 eval machine program =
   foldl' (flip evalOp) (return machine) program
 
+evalBS :: Monad m => Machine m -> BS.ByteString -> m (Machine m)
+evalBS machine program =
+  case fmap (eval machine) $ parseProgram program of
+    -- fixme
+    (Right res) -> res
+
+evalStr :: Monad m => Machine m -> String -> m (Machine m)
+evalStr m = evalBS m . BSC.pack
 
 evalOp :: Monad m => Op -> m (Machine m) -> m (Machine m)
 
