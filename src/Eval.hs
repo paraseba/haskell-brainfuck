@@ -66,21 +66,18 @@ evalOp (L (Loop ops)) machine = do
 
 
 -----
-data SimState = SimState {input :: [Int8] -> Int8, output :: [Int8]}
+data SimState = SimState {input :: [Int8], output :: [Int8]}
 
 simStateOutput :: SimState -> [Int8]
 simStateOutput = reverse . output
 
 emptyState :: Int8 -> SimState
-emptyState inputByte = SimState (const inputByte) []
+emptyState inputByte = SimState [] []
 
 simulator :: Machine (State SimState)
 simulator = Machine blankTape
                     (\byte -> modify (writeByte byte))
-                    readByte
+                    (state readByte)
             where  writeByte byte s@(SimState{output = o}) = s{output = byte : o}
-                   readByte = do
-                     state <- get
-                     return $ input state $ output state
-
+                   readByte s@(SimState{input = (byte:rest)}) = (byte, s{input = rest})
 

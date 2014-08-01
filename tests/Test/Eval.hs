@@ -49,7 +49,7 @@ prop_GetByte :: Bool
 prop_GetByte =
   out == [0, 42]
   where program = [(S PutByte), (B Inc), (S GetByte), (S PutByte)]
-        res = execState (eval simulator program) (emptyState 42)
+        res = execState (eval simulator program) (SimState [42] [])
         out = simStateOutput res
 
 prop_DecLoop :: Bool
@@ -74,14 +74,38 @@ prop_EvalString =
 squares :: [Char]
 squares = "++++[>+++++<-]>[<+++++>-]+<+[\n    >[>+>+<<-]++>>[<<+>>-]>>>[-]++>[-]+\n    >>>+[[-]++++++>>>]<<<[[<++++++++<++>>-]+<.<[>----<-]<]\n    <<[>>>>>[>>>[-]+++++++++<[>-<-]+++++++++>[-[<->-]+[<<<]]<[>+<-]>]<<-]<<-\n]\n"
 
+outToString :: [Int8] -> String
+outToString = map (chr . fromIntegral)
+
 prop_Squares :: Bool
 prop_Squares =
-  toString out == expected
+  outToString out == expected
   where program = squares
-        res = execState (evalStr simulator program) (emptyState 42)
+        res = execState (evalStr simulator program) (emptyState 0)
         out = simStateOutput res
         expected = concat [show (n*n) ++ "\n" | n <- [0..100]]
-        toString = map (chr . fromIntegral)
+
+-- taken from http://rosettacode.org/wiki/Even_or_odd
+isOddCode :: [Char]
+isOddCode = " ,[>,----------]\n++<\n[->-[>+>>]>\n[+[-<+>]>+>>]\n<<<<<]\n>[-]<++++++++\n[>++++++<-]\n>[>+<-]>.\n"
+
+digits :: Integer -> [Int8]
+digits = reverse . digitsRev
+  where digitsRev i = case i of
+          0 -> []
+          _ -> fromIntegral lastDigit : digitsRev rest
+          where (rest, lastDigit) = quotRem i 10
+
+prop_WithInput :: (Positive Integer) -> Bool
+prop_WithInput (Positive n) =
+  outToString out == expected
+  where program = isOddCode
+        res = execState (evalStr simulator program)
+                        (SimState numDigits [])
+        out = simStateOutput res
+        numDigits = digits n ++ [fromIntegral (fromEnum '\n')]
+        -- The program returns the string 1 for odd numbers and 0 for even
+        expected = if odd n then "1" else "0"
 
 properties :: [(String, Prop)]
 properties =
@@ -94,6 +118,5 @@ properties =
 
    ,("eval string", Prop prop_EvalString)
    ,("eval squares program", Prop prop_Squares)
+   ,("eval program with input", Prop prop_WithInput)
   ]
-
-
