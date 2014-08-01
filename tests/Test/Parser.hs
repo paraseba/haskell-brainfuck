@@ -6,6 +6,7 @@ import Debug.Trace
 import Test.QuickCheck
 import Data.ByteString.Lazy.Char8 (pack)
 import Data.Either
+import Control.Monad (liftM3)
 
 import Parser
 import Test.Helper
@@ -38,8 +39,22 @@ prop_BasicProgram = either (const False) (==expected) $ parseProgram input
 
 newtype Code = Code {unCode :: String} deriving Show
 
+sizedCode :: Int -> Gen Code
+sizedCode 0 = fmap Code $ listOf $ frequency [ (20, elements "+-")
+                                             , (10, elements "><")
+                                             , (2,  elements ",.")
+                                             , (10, elements " \n\t")
+                                             ]
+sizedCode n | n>0 = liftM3 (\a b c -> Code $ unCode a ++ unCode b ++ unCode c)
+                           (sizedCode n'')
+                           (fmap (Code . (\s->"[" ++ s ++ "]") . unCode) $ sizedCode n')
+                           (sizedCode n'')
+  where n'  = n  `div` 2
+        n'' = n' `div` 2
+
+
 instance Arbitrary Code where
-  arbitrary = fmap Code $ listOf $ elements ['>','<','+','-',',','.']
+  arbitrary = sized sizedCode
 
 prop_CanParseGenericProgram :: Code -> Bool
 prop_CanParseGenericProgram = isRight . parseProgram . pack . unCode
