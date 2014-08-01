@@ -11,22 +11,9 @@ import Control.Monad (liftM3)
 import Parser
 import Test.Helper
 
-
-instance Arbitrary PointerOp where
-  arbitrary = elements [IncP, DecP]
-instance Arbitrary ByteOp where
-  arbitrary = elements [Inc, Dec]
-instance Arbitrary SideEffectOp where
-  arbitrary = elements [PutByte, GetByte]
-instance Arbitrary Loop where
-  arbitrary = fmap Loop (arbitrary :: Gen [Op])
-
 instance Arbitrary Op where
-  arbitrary = oneof [p,b,s,l]
-    where p = fmap P (arbitrary :: Gen PointerOp)
-          b = fmap B (arbitrary :: Gen ByteOp)
-          s = fmap S (arbitrary :: Gen SideEffectOp)
-          l = fmap L (arbitrary :: Gen Loop)
+  arbitrary = frequency [(6, elements [IncP,DecP,Inc,Dec,PutByte,GetByte])
+                        ,(1, fmap Loop arbitrary)]
 
 prop_ParseEmptyProgram :: Bool
 prop_ParseEmptyProgram = either (const False) (==[]) $ parseProgram input
@@ -35,7 +22,7 @@ prop_ParseEmptyProgram = either (const False) (==[]) $ parseProgram input
 prop_BasicProgram :: Bool
 prop_BasicProgram = either (const False) (==expected) $ parseProgram input
   where input = pack "+>>-<."
-        expected = [B Inc, P IncP, P IncP, B Dec, P DecP, S PutByte]
+        expected = [Inc, IncP, IncP, Dec, DecP, PutByte]
 
 newtype Code = Code {unCode :: String} deriving Show
 
@@ -67,18 +54,18 @@ prop_ParseBlanks :: Bool
 prop_ParseBlanks =
   either (const False) (==expected) $ parseProgram input
   where input = pack "\n   +\n   -  \n"
-        expected = [B Inc, B Dec]
+        expected = [Inc, Dec]
 
 prop_GoodLoop :: Bool
 prop_GoodLoop =
   either (const False) (==expected) $ parseProgram input
   where input = pack "\n   + [+><-\n [-+]\n - ]   +  \n"
-        expected = [ B Inc
-                    ,L (Loop [ B Inc, P IncP, P DecP, B Dec
-                              ,L (Loop [B Dec, B Inc])
-                              ,B Dec
-                             ])
-                    ,B Inc]
+        expected = [ Inc
+                    ,(Loop [ Inc, IncP, DecP, Dec
+                            ,(Loop [Dec, Inc])
+                            ,Dec
+                           ])
+                    ,Inc]
 
 
 properties :: [(String, Prop)]

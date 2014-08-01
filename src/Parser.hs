@@ -1,10 +1,6 @@
 module Parser (
        Program
-     , PointerOp (IncP, DecP)
-     , ByteOp (Inc, Dec)
-     , SideEffectOp (PutByte, GetByte)
-     , Loop (Loop)
-     , Op (P, B, S, L)
+     , Op(..)
      , parseProgram
 
    ) where
@@ -16,21 +12,8 @@ import Text.Parsec.ByteString.Lazy
 import Text.Parsec.Char
 import Control.Applicative ((<*))
 import qualified Data.ByteString.Lazy as BS
---import qualified Text.Parsec.Token as Tok
 
-data PointerOp = IncP | DecP
-  deriving (Show,Eq)
-
-data ByteOp = Inc | Dec
-  deriving (Show,Eq)
-
-data SideEffectOp = PutByte | GetByte
-  deriving (Show,Eq)
-
-data Loop = Loop [Op]
-  deriving (Show,Eq)
-
-data Op = P PointerOp | B ByteOp | S SideEffectOp | L Loop
+data Op = IncP | DecP | Inc | Dec | PutByte | GetByte | Loop [Op]
   deriving (Show,Eq)
 
 type Program = [Op]
@@ -51,17 +34,17 @@ simpleOp = do
   c <- (char '>') <|> (char '<') <|> (char '+') <|>
        (char '-') <|> (char '.') <|> (char ',')
   return $ case c of
-    '>' -> P IncP
-    '<' -> P DecP
-    '+' -> B Inc
-    '-' -> B Dec
-    '.' -> S PutByte
-    ',' -> S GetByte
+    '>' -> IncP
+    '<' -> DecP
+    '+' -> Inc
+    '-' -> Dec
+    '.' -> PutByte
+    ',' -> GetByte
 
 loop :: Parser Op
 loop = do
   p <- between (char '[') (char ']') program
-  return $ L (Loop p)
+  return $ Loop p
 
 parseProgram :: BS.ByteString -> Either ParseError Program
 parseProgram s = runP fullProgram () "" s

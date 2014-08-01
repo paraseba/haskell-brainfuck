@@ -43,27 +43,27 @@ evalStr m = evalBS m . BSC.pack
 
 evalOp :: Monad m => Op -> m (Machine m) -> m (Machine m)
 
-evalOp (P IncP) machine = machine >>= return . update right --move the head right
-evalOp (P DecP) machine = machine >>= return . update left
-evalOp (B Inc)  machine = machine >>= return . update inc
-evalOp (B Dec)  machine = machine >>= return . update dec
+evalOp IncP machine = machine >>= return . update right --move the head right
+evalOp DecP machine = machine >>= return . update left
+evalOp Inc  machine = machine >>= return . update inc
+evalOp Dec  machine = machine >>= return . update dec
 
-evalOp (S PutByte) machine = do
+evalOp PutByte machine = do
   m <- machine
   let current = (rTape . tape) m
   putByte m current
   return m
 
-evalOp (S GetByte) machine = do
+evalOp GetByte machine = do
   m <- machine
   b <- getByte m
   (return . update (wTape b)) m
 
-evalOp (L (Loop ops)) machine = do
+evalOp (Loop ops) machine = do
   m <- machine
   if ((==0) . rTape . tape) m
     then return m
-    else evalOp (L (Loop ops)) $ eval m ops
+    else evalOp (Loop ops) $ eval m ops
 
 
 defaultIOMachine :: Machine IO

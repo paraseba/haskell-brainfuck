@@ -24,16 +24,16 @@ prop_EmptyProgram = current == 0
 prop_IncrementsDecrements :: Positive Int8 -> Positive Int8 -> Bool
 prop_IncrementsDecrements (Positive incs) (Positive decs) =
   current == incs - decs
-  where program = replicate (fromIntegral incs) (B Inc) ++
-                  replicate (fromIntegral decs) (B Dec)
+  where program = replicate (fromIntegral incs) Inc ++
+                  replicate (fromIntegral decs) Dec
         (Tape _ current _) = evaluate program
 
 prop_simpleProgram :: Bool
 prop_simpleProgram =
   current == 1 && next !! 0 == 4
-  where program = [(B Inc), (B Inc),                             -- +2
-                   (P IncP), (B Inc), (B Inc), (B Inc), (B Inc), -- right +4
-                   (P DecP), (B Dec)                             -- left -1
+  where program = [Inc, Inc,             -- +2
+                   IncP,Inc,Inc,Inc,Inc, -- right +4
+                   DecP,Dec              -- left -1
                   ]
         res = evaluate program
         (Tape prev current next) = res
@@ -41,25 +41,25 @@ prop_simpleProgram =
 prop_PutByte :: Bool
 prop_PutByte =
   out == [0, 1, 2, 1]
-  where program = [(S PutByte), (B Inc), (S PutByte), (B Inc), (S PutByte), (B Dec), (S PutByte)]
+  where program = [PutByte, Inc, PutByte, Inc, PutByte, Dec, PutByte]
         res = execState (eval simulator program) (emptyState 0)
         out = simStateOutput res
 
 prop_GetByte :: Bool
 prop_GetByte =
   out == [0, 42]
-  where program = [(S PutByte), (B Inc), (S GetByte), (S PutByte)]
+  where program = [PutByte, Inc, GetByte, PutByte]
         res = execState (eval simulator program) (SimState [42] [])
         out = simStateOutput res
 
 prop_DecLoop :: Bool
 prop_DecLoop =
   out == [42,41..1] ++ [(-1)]
-  where loop = L (Loop [(S PutByte), (B Dec)])  -- print and dec
+  where loop = (Loop [PutByte, Dec])  -- print and dec
         -- start with pointer -> 42
         -- loop printing and decrementing
         -- dec and print once more when out of the loop
-        program = replicate 42 (B Inc) ++ [loop] ++ [(B Dec), (S PutByte)]
+        program = replicate 42 Inc ++ [loop] ++ [Dec, PutByte]
         res = execState (eval simulator program) (emptyState 0)
         out = simStateOutput res
 
