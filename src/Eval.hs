@@ -2,6 +2,7 @@ module Eval (
   eval, evalBS, evalStr
   ,Machine
   ,tape, putByte, getByte
+  ,defaultIOMachine
   ,simulator, SimState (SimState), simStateOutput
   ,emptyState
 ) where
@@ -64,6 +65,11 @@ evalOp (L (Loop ops)) machine = do
     then return m
     else evalOp (L (Loop ops)) $ eval m ops
 
+
+defaultIOMachine :: Machine IO
+defaultIOMachine = Machine blankTape
+                           (putChar . toEnum . fromIntegral)
+                           (fmap (fromIntegral . fromEnum) getChar)
 
 -----
 data SimState = SimState {input :: [Int8], output :: [Int8]}
