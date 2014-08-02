@@ -16,21 +16,18 @@ import qualified Data.ByteString.Lazy.Char8 as BSC
 import qualified Parser as P
 import qualified Tape   as T
 
-type Putter m = Int8 -> m ()
-type Getter m = m Int8
 type BFTape = T.Tape Int8
 
 data Machine m = Machine { tape :: BFTape
-                          ,putByte :: Putter m
-                          ,getByte :: Getter m
+                          ,putByte :: Int8 -> m ()
+                          ,getByte :: m Int8
                          }
 
 update :: (BFTape -> BFTape) -> Machine m -> Machine m
 update f m = m{tape = f $ tape m}
 
 eval :: Monad m => Machine m -> P.Program -> m (Machine m)
-eval machine program =
-  foldl' (flip evalOp) (return machine) program
+eval = foldl' evalOp . return
 
 evalBS :: Monad m => Machine m -> BS.ByteString -> m (Machine m)
 evalBS machine program =
@@ -41,29 +38,29 @@ evalBS machine program =
 evalStr :: Monad m => Machine m -> String -> m (Machine m)
 evalStr m = evalBS m . BSC.pack
 
-evalOp :: Monad m => P.Op -> m (Machine m) -> m (Machine m)
+evalOp :: Monad m => m (Machine m) -> P.Op -> m (Machine m)
 
-evalOp P.IncP machine = machine >>= return . update T.right --move the head right
-evalOp P.DecP machine = machine >>= return . update T.left
-evalOp P.Inc  machine = machine >>= return . update T.inc
-evalOp P.Dec  machine = machine >>= return . update T.dec
+evalOp machine P.IncP = machine >>= return . update T.right --move the head right
+evalOp machine P.DecP = machine >>= return . update T.left
+evalOp machine P.Inc  = machine >>= return . update T.inc
+evalOp machine P.Dec  = machine >>= return . update T.dec
 
-evalOp P.PutByte machine = do
+evalOp machine P.PutByte = do
   m <- machine
   let current = (T.rTape . tape) m
   putByte m current
   return m
 
-evalOp P.GetByte machine = do
+evalOp machine P.GetByte = do
   m <- machine
   b <- getByte m
   (return . update (T.wTape b)) m
 
-evalOp (P.Loop ops) machine = do
+evalOp machine (P.Loop ops) = do
   m <- machine
   if ((==0) . T.rTape . tape) m
     then return m
-    else evalOp (P.Loop ops) $ eval m ops
+    else evalOp (eval m ops) $ P.Loop ops
 
 
 defaultIOMachine :: Machine IO
