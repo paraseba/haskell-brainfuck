@@ -2,15 +2,14 @@ module Parser (
        Program
      , Op(..)
      , parseProgram
+     ) where
 
-   ) where
-
-import Text.Parsec.Prim
-import Text.Parsec.Combinator
-import Text.Parsec.Error
-import Text.Parsec.ByteString.Lazy
-import Text.Parsec.Char
-import Control.Applicative ((<*))
+import Text.Parsec.Prim                  ((<|>), runP, skipMany)
+import Text.Parsec.Combinator            (between, sepEndBy, eof)
+import Text.Parsec.Error                 (ParseError)
+import Text.Parsec.ByteString.Lazy       (Parser)
+import Text.Parsec.Char                  (space, spaces, char)
+import Control.Applicative               ((<*))
 import qualified Data.ByteString.Lazy as BS
 
 data Op = IncP | DecP | Inc | Dec | PutByte | GetByte | Loop [Op]
@@ -29,22 +28,21 @@ fullProgram = program <* eof
 operation :: Parser Op
 operation = simpleOp <|> loop
 
+simpleChar :: Parser Char
+simpleChar = (char '>') <|> (char '<') <|> (char '+') <|>
+             (char '-') <|> (char '.') <|> (char ',')
+
 simpleOp :: Parser Op
-simpleOp = do
-  c <- (char '>') <|> (char '<') <|> (char '+') <|>
-       (char '-') <|> (char '.') <|> (char ',')
-  return $ case c of
-    '>' -> IncP
-    '<' -> DecP
-    '+' -> Inc
-    '-' -> Dec
-    '.' -> PutByte
-    ',' -> GetByte
+simpleOp = fmap build simpleChar
+  where build '>' = IncP
+        build '<' = DecP
+        build '+' = Inc
+        build '-' = Dec
+        build '.' = PutByte
+        build ',' = GetByte
 
 loop :: Parser Op
-loop = do
-  p <- between (char '[') (char ']') program
-  return $ Loop p
+loop = fmap Loop $ between (char '[') (char ']') program
 
 parseProgram :: BS.ByteString -> Either ParseError Program
 parseProgram s = runP fullProgram () "" s
