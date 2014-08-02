@@ -11,10 +11,7 @@ import Parser
 import Tape
 import Eval
 
-{-ioMachine :: Machine IO-}
-{-ioMachine = Machine blankTape (putChar . toEnum) (fromEnum . getChar)-}
-
-evaluate :: Program -> Tape
+evaluate :: Program -> Tape Int8
 evaluate p = tape $ evalState (eval simulator p) (emptyState 0)
 
 prop_EmptyProgram :: Bool

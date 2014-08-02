@@ -19,13 +19,14 @@ import Tape
 
 type Putter m = Int8 -> m ()
 type Getter m = m Int8
+type BFTape = Tape Int8
 
-data Machine m = Machine { tape :: Tape
+data Machine m = Machine { tape :: BFTape
                           ,putByte :: Putter m
                           ,getByte :: Getter m
                          }
 
-update :: (Tape -> Tape) -> Machine m -> Machine m
+update :: (BFTape -> BFTape) -> Machine m -> Machine m
 update f m = m{tape = f $ tape m}
 
 eval :: Monad m => Machine m -> Program -> m (Machine m)

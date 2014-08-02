@@ -2,7 +2,6 @@
 
 module Test.Parser (properties) where
 
-import Debug.Trace
 import Test.QuickCheck
 import Data.ByteString.Lazy.Char8 (pack)
 import Data.Either
@@ -39,7 +38,6 @@ sizedCode n | n>0 = liftM3 (\a b c -> Code $ unCode a ++ unCode b ++ unCode c)
   where n'  = n  `div` 2
         n'' = n' `div` 2
 
-
 instance Arbitrary Code where
   arbitrary = sized sizedCode
 
@@ -66,7 +64,6 @@ prop_GoodLoop =
                             ,Dec
                            ])
                     ,Inc]
-
 
 properties :: [(String, Prop)]
 properties =
