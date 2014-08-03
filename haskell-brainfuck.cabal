@@ -50,13 +50,13 @@ library
     exposed-modules:
       Parser, Tape, Eval
 
-    extensions: TupleSections
-
     hs-source-dirs: src/
     build-depends:       base >=4.7 && <4.8
                          ,bytestring
                          ,parsec
                          ,mtl
+
+    default-extensions: TupleSections
 
     default-language: Haskell2010
     --ghc-options: -O2 -Wall -fwarn-tabs
