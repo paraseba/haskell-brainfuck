@@ -1,15 +1,14 @@
 module Eval (
   eval, evalBS, evalStr
   ,Machine(Machine)
-  ,tape, putByte, getByte
+  ,putByte, getByte
   ,defaultIOMachine
   ,simulator, SimState (SimState), simStateOutput
   ,emptyState
 ) where
 
 import Data.Int (Int8)
-import Data.List (foldl')
-import Control.Monad.State (State, modify, state)
+import Control.Monad.State (State, modify, state, StateT(StateT), execStateT, get)
 import qualified Data.ByteString.Lazy as BS
 import qualified Data.ByteString.Lazy.Char8 as BSC
 
@@ -18,54 +17,51 @@ import qualified Tape   as T
 
 type BFTape = T.Tape Int8
 
-data Machine m = Machine { tape :: BFTape
-                          ,putByte :: Int8 -> m ()
+data Machine m = Machine { putByte :: Int8 -> m ()
                           ,getByte :: m Int8
                          }
 
-update :: (BFTape -> BFTape) -> Machine m -> Machine m
-update f m = m{tape = f $ tape m}
+type TapeState m a = StateT BFTape m a
 
-eval :: Monad m => Machine m -> P.Program -> m (Machine m)
-eval = foldl' evalOp . return
+evalTape :: Monad m => Machine m -> P.Program -> TapeState m ()
+evalTape m = mapM_ (evalOp m)
 
-evalBS :: Monad m => Machine m -> BS.ByteString -> m (Machine m)
+eval :: Monad m => Machine m -> P.Program -> m BFTape
+eval m p = execStateT (evalTape m p) T.blankTape
+
+evalBS :: Monad m => Machine m -> BS.ByteString -> m BFTape
 evalBS machine program =
   case fmap (eval machine) $ P.parseProgram program of
     -- fixme
     (Right res) -> res
 
-evalStr :: Monad m => Machine m -> String -> m (Machine m)
+evalStr :: Monad m => Machine m -> String -> m BFTape
 evalStr m = evalBS m . BSC.pack
 
-evalOp :: Monad m => m (Machine m) -> P.Op -> m (Machine m)
+evalOp :: Monad m => Machine m -> P.Op -> TapeState m ()
 
-evalOp machine P.IncP = machine >>= return . update T.right --move the head right
-evalOp machine P.DecP = machine >>= return . update T.left
-evalOp machine P.Inc  = machine >>= return . update T.inc
-evalOp machine P.Dec  = machine >>= return . update T.dec
-
-evalOp machine P.PutByte = do
-  m <- machine
-  let current = (T.rTape . tape) m
-  putByte m current
-  return m
-
-evalOp machine P.GetByte = do
-  m <- machine
-  b <- getByte m
-  (return . update (T.wTape b)) m
+evalOp _ P.IncP = modify T.right
+evalOp _ P.DecP = modify T.left
+evalOp _ P.Inc  = modify T.inc
+evalOp _ P.Dec  = modify T.dec
 
 evalOp machine (P.Loop ops) = do
-  m <- machine
-  if ((==0) . T.rTape . tape) m
-    then return m
-    else evalOp (eval m ops) $ P.Loop ops
+  tape <- get
+  if (T.rTape tape == 0)
+  then return ()
+  else evalTape machine ops >> evalOp machine (P.Loop ops)
+
+evalOp (Machine{putByte = putByte}) P.PutByte =
+  StateT f
+  where f tape = putByte (T.rTape tape) >>= return . (,tape)
+
+evalOp (Machine{getByte = getByte}) P.GetByte =
+  StateT f
+  where f tape = getByte >>= (\b -> return ((), T.wTape b tape))
 
 
 defaultIOMachine :: Machine IO
-defaultIOMachine = Machine T.blankTape
-                           (putChar . toEnum . fromIntegral)
+defaultIOMachine = Machine (putChar . toEnum . fromIntegral)
                            (fmap (fromIntegral . fromEnum) getChar)
 
 -----
@@ -74,12 +70,11 @@ data SimState = SimState {input :: [Int8], output :: [Int8]}
 simStateOutput :: SimState -> [Int8]
 simStateOutput = reverse . output
 
-emptyState :: Int8 -> SimState
-emptyState inputByte = SimState [] []
+emptyState :: SimState
+emptyState = SimState [] []
 
 simulator :: Machine (State SimState)
-simulator = Machine T.blankTape
-                    (\byte -> modify (writeByte byte))
+simulator = Machine (\byte -> modify (writeByte byte))
                     (state readByte)
             where  writeByte byte s@(SimState{output = o}) = s{output = byte : o}
                    readByte s@(SimState{input = (byte:rest)}) = (byte, s{input = rest})

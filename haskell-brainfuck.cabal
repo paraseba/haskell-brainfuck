@@ -50,6 +50,8 @@ library
     exposed-modules:
       Parser, Tape, Eval
 
+    extensions: TupleSections
+
     hs-source-dirs: src/
     build-depends:       base >=4.7 && <4.8
                          ,bytestring

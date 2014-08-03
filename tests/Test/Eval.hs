@@ -12,7 +12,7 @@ import Tape
 import Eval
 
 evaluate :: Program -> Tape Int8
-evaluate p = tape $ evalState (eval simulator p) (emptyState 0)
+evaluate p = evalState (eval simulator p) emptyState
 
 prop_EmptyProgram :: Bool
 prop_EmptyProgram = current == 0
@@ -39,7 +39,7 @@ prop_PutByte :: Bool
 prop_PutByte =
   out == [0, 1, 2, 1]
   where program = [PutByte, Inc, PutByte, Inc, PutByte, Dec, PutByte]
-        res = execState (eval simulator program) (emptyState 0)
+        res = execState (eval simulator program) emptyState
         out = simStateOutput res
 
 prop_GetByte :: Bool
@@ -57,14 +57,14 @@ prop_DecLoop =
         -- loop printing and decrementing
         -- dec and print once more when out of the loop
         program = replicate 42 Inc ++ [loop] ++ [Dec, PutByte]
-        res = execState (eval simulator program) (emptyState 0)
+        res = execState (eval simulator program) emptyState
         out = simStateOutput res
 
 prop_EvalString :: Bool
 prop_EvalString =
   out == [2]
   where program = "++."
-        res = execState (evalStr simulator program) (emptyState 42)
+        res = execState (evalStr simulator program) emptyState
         out = simStateOutput res
 
 -- taken from http://www.hevanet.com/cristofd/brainfuck/
@@ -78,7 +78,7 @@ prop_Squares :: Bool
 prop_Squares =
   outToString out == expected
   where program = squares
-        res = execState (evalStr simulator program) (emptyState 0)
+        res = execState (evalStr simulator program) emptyState
         out = simStateOutput res
         expected = concat [show (n*n) ++ "\n" | n <- [0..100]]
 
