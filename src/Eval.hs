@@ -40,8 +40,8 @@ evalStr m = evalBS m . BSC.pack
 
 evalOp :: Monad m => Machine m -> P.Op -> TapeState m ()
 
-evalOp _ P.IncP = modify T.right
-evalOp _ P.DecP = modify T.left
+evalOp _ P.IncP = modify (either (const $ error "foo") id . T.right)
+evalOp _ P.DecP = modify (either (const $ error "foo") id . T.left)
 evalOp _ P.Inc  = modify T.inc
 evalOp _ P.Dec  = modify T.dec
 

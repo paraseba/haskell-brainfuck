@@ -13,6 +13,7 @@ the concept of a pointer, and the pointer can be incremented or decremented.
 
 module Tape (
   Tape(Tape)
+  ,ExecutionError
   ,rTape, wTape
   ,inc, dec
   ,right, left
@@ -59,17 +60,30 @@ dec :: Num a
     -> Tape a -- ^ The tape with the current position decremented
 dec = update (+(-1))
 
+-- | Type for execution errors, trying to move the tape beyond one of its
+-- ends. The 'String' argument is the error message and the 'Tape' is in
+-- the state right before the faulting operation
+data ExecutionError a = ExecutionError String (Tape a)
+
 -- | Move the pinter to the right
-right :: Tape a -- ^ The tape
-      -> Tape a -- ^ The pointer in the resulting tape points to the element
-                -- to the right of the pointer in the original tape
-right (Tape l c (r:rs)) = Tape (c:l) r rs
+right :: Tape a  -- ^ The tape
+      -> Either (ExecutionError a) (Tape a)
+      -- ^ A new tape with its pointer pointing to the
+      -- element to the right of the pointer in the
+      -- original tape; or an execution error if the
+      -- tape to the right is exhausted
+right t@(Tape _ _ []) = Left $ ExecutionError "Error trying to go right on an empty tape" t
+right (Tape l c (r:rs)) = Right $ Tape (c:l) r rs
 
 -- | Move the pinter to the left
-left :: Tape a -- ^ The tape
-     -> Tape a -- ^ The pointer in the resulting tape points to the element
-               -- to the left of the pointer in the original tape
-left (Tape (l:ls) c r) = Tape ls l (c:r)
+left :: Tape a  -- ^ The tape
+     -> Either (ExecutionError a) (Tape a)
+     -- ^ A new tape with its pointer pointing to
+     -- the element to the left of the pointer in
+     -- the original tape; or an execution error if
+     -- the tape to the left is exhausted
+left t@(Tape [] _ _) = Left $ ExecutionError "Error trying to go left on an empty tape" t
+left (Tape (l:ls) c r) = Right $ Tape ls l (c:r)
 
 constTape :: t -> Tape t
 constTape b = Tape [] b (repeat b)
