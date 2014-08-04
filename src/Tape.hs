@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances #-}
+
 {-|
 Module      : Tape
 Description : Implement the brainfuck tape
@@ -13,14 +15,17 @@ the concept of a pointer, and the pointer can be incremented or decremented.
 
 module Tape (
   Tape(Tape)
-  ,ExecutionError
+  ,ExecutionError(errMsg, errTape)
   ,rTape, wTape
   ,inc, dec
   ,right, left
+  ,BFExError
+  ,BFTape
   ,blankTape
 ) where
 
 import Data.Int (Int8)
+import Control.Monad.Error (Error, strMsg)
 
 -- | Brainfuck tape. Constructor arguments correspond to
 --
@@ -63,7 +68,7 @@ dec = update (+(-1))
 -- | Type for execution errors, trying to move the tape beyond one of its
 -- ends. The 'String' argument is the error message and the 'Tape' is in
 -- the state right before the faulting operation
-data ExecutionError a = ExecutionError String (Tape a)
+data ExecutionError a = ExecutionError {errMsg :: String,  errTape :: (Tape a)}
 
 -- | Move the pinter to the right
 right :: Tape a  -- ^ The tape
@@ -88,7 +93,16 @@ left (Tape (l:ls) c r) = Right $ Tape ls l (c:r)
 constTape :: t -> Tape t
 constTape b = Tape [] b (repeat b)
 
+-- | Execution error type for basic Brainfuck tapes
+type BFExError = ExecutionError Int8
+
+-- | Brainfuck tapes type
+type BFTape = Tape Int8
+
+instance Error BFExError where
+  strMsg s = ExecutionError s (Tape [] 0 [])
+
 -- | A @(0 :: 'Int8')@ initialized, infinite 'Tape' pointing to its leftmost position.
 -- An attemp to move the pointer left will result in an error
-blankTape :: Tape Int8
+blankTape :: BFTape
 blankTape = constTape 0

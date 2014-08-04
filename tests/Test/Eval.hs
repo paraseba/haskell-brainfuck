@@ -11,29 +11,42 @@ import Parser
 import Tape
 import Eval
 
-evaluate :: Program -> Tape Int8
+evaluate :: Program -> Either BFExError BFTape
 evaluate p = evalState (eval simulator p) emptyState
 
+evaluateSucc :: Program -> (BFTape -> Bool) -> Bool
+evaluateSucc p pred = either (const False) pred $ evaluate p
+
+evaluateError :: Program -> (BFTape -> Bool) -> Bool
+evaluateError p pred = either (pred . errTape) (const False) $ evaluate p
+
 prop_EmptyProgram :: Bool
-prop_EmptyProgram = current == 0
-  where (Tape _ current _) = evaluate []
+prop_EmptyProgram =
+  evaluateSucc [] $ \(Tape _ current _) -> current == 0
 
 prop_IncrementsDecrements :: Positive Int8 -> Positive Int8 -> Bool
 prop_IncrementsDecrements (Positive incs) (Positive decs) =
-  current == incs - decs
+  evaluateSucc program $ \(Tape _ current _) -> current == incs - decs
   where program = replicate (fromIntegral incs) Inc ++
                   replicate (fromIntegral decs) Dec
-        (Tape _ current _) = evaluate program
 
 prop_simpleProgram :: Bool
 prop_simpleProgram =
-  current == 1 && next !! 0 == 4
+  evaluateSucc program $ \(Tape prev current next) -> current == 1 && next !! 0 == 4
   where program = [Inc, Inc,             -- +2
                    IncP,Inc,Inc,Inc,Inc, -- right +4
                    DecP,Dec              -- left -1
                   ]
-        res = evaluate program
-        (Tape prev current next) = res
+
+prop_tapeOverflow :: Bool
+prop_tapeOverflow =
+  evaluateError program predicate
+  where program = [Inc, Inc,             -- +2
+                   IncP,Inc,Inc,Inc,Inc, -- right +4
+                   DecP,DecP             -- left overflow
+                  ]
+        predicate (Tape [] 2 (4:0:_)) = True
+        predicate _ = False
 
 prop_PutByte :: Bool
 prop_PutByte =
@@ -109,6 +122,7 @@ properties =
   [ ("eval empty program", Prop prop_EmptyProgram)
    ,("eval incs and decs", Prop prop_IncrementsDecrements)
    ,("eval simple inc and shift program", Prop prop_simpleProgram)
+   ,("eval left overflow program", Prop prop_tapeOverflow)
    ,("eval put byte", Prop prop_PutByte)
    ,("eval get byte", Prop prop_GetByte)
    ,("eval simple decrementing loop", Prop prop_DecLoop)
