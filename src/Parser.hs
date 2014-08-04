@@ -14,6 +14,7 @@ module Parser (
        Program
      , Op(..)
      , parseProgram
+     , ParseError
      ) where
 
 import Text.Parsec.Prim                  ((<|>), runP, skipMany)

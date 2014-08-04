@@ -1,23 +1,29 @@
 module Eval (
   eval, evalBS, evalStr
+  ,EvalResult(..)
   ,Machine(Machine)
   ,putByte, getByte
   ,defaultIOMachine
   ,simulator, SimState (SimState), simStateOutput
   ,emptyState
+
+  -- exported from Tape
+  ,BFExError, Tape(Tape), BFTape, errMsg, errTape, rTape
+  -- exported from Parser
+  ,ParseError
 ) where
 
-import Debug.Trace --fixme
-
 import Data.Int (Int8)
+import Control.Monad (liftM)
 import Control.Monad.State (State, modify, state, StateT(StateT), execStateT, get, put, mapStateT)
 import qualified Data.ByteString.Lazy as BS
 import qualified Data.ByteString.Lazy.Char8 as BSC
 import Control.Monad.Error
 
+import Parser (ParseError)
 import qualified Parser as P
-import Tape (BFTape, BFExError)
-import qualified Tape as T
+import Tape (Tape(Tape), blankTape, BFTape, BFExError, errMsg, errTape, rTape, wTape, left, right, inc, dec)
+
 
 type TapeState m = StateT BFTape (ErrorT BFExError m)
 
@@ -32,15 +38,19 @@ evalTape :: Monad m
 evalTape m = mapM_ (evalOp m)
 
 eval :: Monad m => Machine m -> P.Program -> m (Either BFExError BFTape)
-eval m p = runErrorT $ execStateT (evalTape m p) T.blankTape
+eval m p = runErrorT $ execStateT (evalTape m p) blankTape
 
-evalBS :: Monad m => Machine m -> BS.ByteString -> m (Either BFExError BFTape)
+data EvalResult = EvalSuccess BFTape
+                | EvalExecError BFExError
+                | EvalParseError ParseError
+
+evalBS :: Monad m => Machine m -> BS.ByteString -> m EvalResult
 evalBS machine program =
-  case fmap (eval machine) $ P.parseProgram program of
-    -- fixme
-    (Right res) -> res
+  either parseError evaluate . P.parseProgram $ program
+  where parseError = return . EvalParseError
+        evaluate = liftM (either EvalExecError EvalSuccess) . eval machine
 
-evalStr :: Monad m => Machine m -> String -> m (Either BFExError BFTape)
+evalStr :: Monad m => Machine m -> String -> m EvalResult
 evalStr m = evalBS m . BSC.pack
 
 evalOp :: Monad m
@@ -50,37 +60,37 @@ evalOp :: Monad m
 
 evalOp _ P.IncP =
   StateT f
-  where f tape = case T.right tape of
+  where f tape = case right tape of
                    (Right tape') -> ErrorT $ return $ Right ((), tape')
                    (Left e)      -> ErrorT $ return $ Left e
 
 evalOp _ P.DecP =
   StateT f
-  where f tape = case T.left tape of
+  where f tape = case left tape of
                    (Right tape') -> ErrorT $ return $ Right ((), tape')
                    (Left e)      -> ErrorT $ return $ Left e
 
 evalOp _ P.Inc =
   StateT f
-  where f = ErrorT . return . Right . ((),) . T.inc
+  where f = ErrorT . return . Right . ((),) . inc
 
 evalOp _ P.Dec =
   StateT f
-  where f = ErrorT . return . Right . ((),) . T.dec
+  where f = ErrorT . return . Right . ((),) . dec
 
 evalOp machine (P.Loop ops) = do
   tape <- get
-  if (T.rTape tape == 0)
+  if (rTape tape == 0)
   then return ()
   else evalTape machine ops >> evalOp machine (P.Loop ops)
 
 evalOp (Machine{putByte = putByte}) P.PutByte =
   StateT f
-  where f tape =  ErrorT  $ putByte (T.rTape tape) >>= return . Right . (,tape)
+  where f tape =  ErrorT  $ putByte (rTape tape) >>= return . Right . (,tape)
 
 evalOp (Machine{getByte = getByte}) P.GetByte =
   StateT f
-  where f tape = ErrorT $ getByte >>= (\b -> return $ Right ((), T.wTape b tape))
+  where f tape = ErrorT $ getByte >>= (\b -> return $ Right ((), wTape b tape))
 
 
 defaultIOMachine :: Machine IO
