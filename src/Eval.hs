@@ -53,44 +53,32 @@ evalBS machine program =
 evalStr :: Monad m => Machine m -> String -> m EvalResult
 evalStr m = evalBS m . BSC.pack
 
+evolve :: Monad m
+          => (BFTape -> m (Either BFExError BFTape))
+          -> TapeState m ()
+evolve g = StateT $ ErrorT . (>>= return . liftM ((),)) . g
+
 evalOp :: Monad m
        => Machine m
        -> P.Op
        -> TapeState m ()
 
-evalOp _ P.IncP =
-  StateT f
-  where f tape = case right tape of
-                   (Right tape') -> ErrorT $ return $ Right ((), tape')
-                   (Left e)      -> ErrorT $ return $ Left e
+evalOp _ P.IncP = evolve $ return . right
+evalOp _ P.DecP = evolve $ return . left
+evalOp _ P.Inc  = evolve $ return . Right . inc
+evalOp _ P.Dec  = evolve $ return . Right . dec
 
-evalOp _ P.DecP =
-  StateT f
-  where f tape = case left tape of
-                   (Right tape') -> ErrorT $ return $ Right ((), tape')
-                   (Left e)      -> ErrorT $ return $ Left e
+evalOp (Machine{putByte = putByte}) P.PutByte =
+  evolve $ \tape -> liftM (const (Right tape)) $ (putByte . rTape) tape
 
-evalOp _ P.Inc =
-  StateT f
-  where f = ErrorT . return . Right . ((),) . inc
-
-evalOp _ P.Dec =
-  StateT f
-  where f = ErrorT . return . Right . ((),) . dec
+evalOp (Machine{getByte = getByte}) P.GetByte =
+  evolve $ \tape -> liftM (Right . flip wTape tape) getByte
 
 evalOp machine (P.Loop ops) = do
   tape <- get
   if (rTape tape == 0)
   then return ()
   else evalTape machine ops >> evalOp machine (P.Loop ops)
-
-evalOp (Machine{putByte = putByte}) P.PutByte =
-  StateT f
-  where f tape =  ErrorT  $ putByte (rTape tape) >>= return . Right . (,tape)
-
-evalOp (Machine{getByte = getByte}) P.GetByte =
-  StateT f
-  where f tape = ErrorT $ getByte >>= (\b -> return $ Right ((), wTape b tape))
 
 
 defaultIOMachine :: Machine IO
