@@ -1,16 +1,27 @@
+{-|
+Module      : Eval
+Description : Evaluate a BrainFuck program
+Copyright   : (c) Sebastian Galkin, 2014
+License     : MIT
+Maintainer  : paraseba@gmail.com
+Stability   : experimental
+
+This module exports functions that allow to evaluate a BrainFuck program.
+Evaluation supports two types of error, parsing and execution, by returning
+instances of 'EvalResult'
+-}
+
 module Eval (
   eval, evalBS, evalStr
   ,EvalResult(..)
   ,Machine(Machine)
   ,putByte, getByte
   ,defaultIOMachine
-  ,simulatorMachine, SimState (SimState), simStateOutput
+  ,simulatorMachine, SimState(SimState), simStateOutput
   ,emptyState
 
-  -- exported from Tape
-  ,BFExError, Tape(Tape), BFTape, errMsg, errTape, rTape
-  -- exported from Parser
-  ,ParseError
+  ,module Tape
+  ,module Parser
 ) where
 
 import Data.Int (Int8)
@@ -27,9 +38,22 @@ import Tape (Tape(Tape), blankTape, BFTape, BFExError, errMsg, errTape, rTape, w
 
 type TapeState m = StateT BFTape (ErrorT BFExError m)
 
-data Machine m = Machine { putByte :: Int8 -> m ()
-                          ,getByte :: m Int8
-                         }
+-- | Underlying input output for the evaluation machine. Changing the monad 'm'
+-- achives different results. For instance using the 'IO' monad an evaluator can
+-- be created that does input/output to stdin/stdout. If the monad is 'State',
+-- for instance, input/output can happen in memory.
+--
+-- We offer two implementations of 'Machine':
+--
+--   * 'defaultIOMachine': under the 'IO' monad, does input/output using the
+--   standard streams
+--   * 'simulatorMachine': under the 'State' monad, does input/output on lists
+--
+-- It's easy to create other 'Machine's by using different monads and functions.
+data Machine m =
+  Machine { putByte :: Int8 -> m () -- ^ Write a byte to the output, under monad 'm'
+          , getByte :: m Int8       -- ^ Get a byte under the 'm' monad
+          }
 
 evalTape :: Monad m
          => Machine m
@@ -37,20 +61,50 @@ evalTape :: Monad m
          -> TapeState m ()
 evalTape m = mapM_ (evalOp m)
 
-eval :: Monad m => Machine m -> P.Program -> m (Either BFExError BFTape)
+
+-- | Evaluate a parsed BrainFuck program using I/O provided by the given 'Machine'
+--
+-- The result is either an execution error or the 'BFTape' representing the
+-- resulting state of the tape after the last instruction was executed.
+eval :: Monad m
+     => Machine m                    -- ^ The machine used to do I/O
+     -> P.Program                    -- ^ The program to evaluate
+     -> m (Either BFExError BFTape)  -- ^ Resulting tape after evaluation or execution error
 eval m p = runErrorT $ execStateT (evalTape m p) blankTape
 
+-- | Evaluation result of an unparsed BrainFuck program
 data EvalResult = EvalSuccess BFTape
-                | EvalExecError BFExError
-                | EvalParseError ParseError
+                  -- ^ Parsing and evaluation were successful. The resulting
+                  -- state of the tape after the last instruction was executed.
 
-evalBS :: Monad m => Machine m -> BS.ByteString -> m EvalResult
+                | EvalExecError BFExError
+                  -- ^ The program was parsed successfully but evaluation failed.
+                  -- The reason for failure is overflowing a limit of the tape.
+                  -- The state of the tape before the error is included
+
+                | EvalParseError ParseError
+                  -- ^ The program can not be parsed. Parsing error message is
+                  -- included
+
+-- | Evaluate an unparsed BrainFuck program using I/O provided by the given 'Machine'
+--
+-- The result is returned as an 'EvalResult'
+evalBS :: Monad m
+       => Machine m     -- ^ The machine used to do I/O
+       -> BS.ByteString -- ^ The code to evaluate
+       -> m EvalResult  -- ^ Parsing/evaluation result
 evalBS machine program =
   either parseError evaluate . P.parseProgram $ program
   where parseError = return . EvalParseError
         evaluate = liftM (either EvalExecError EvalSuccess) . eval machine
 
-evalStr :: Monad m => Machine m -> String -> m EvalResult
+-- | Evaluate an unparsed BrainFuck program using I/O provided by the given 'Machine'
+--
+-- The result is returned as an 'EvalResult'
+evalStr :: Monad m
+        => Machine m    -- ^ The machine used to do I/O
+        -> String       -- ^ The code to evaluate
+        -> m EvalResult -- ^ Parsing/evaluation result
 evalStr m = evalBS m . BSC.pack
 
 evolve :: Monad m
@@ -81,19 +135,32 @@ evalOp machine (P.Loop ops) = do
   else evalTape machine ops >> evalOp machine (P.Loop ops)
 
 
+-- | A 'Machine' that can evaluate code under the 'IO' monad by doing I/O
+-- to stdin/stout.
+--
+-- Bytes are read by comnverting them from the ASCII code
 defaultIOMachine :: Machine IO
 defaultIOMachine = Machine (putChar . toEnum . fromIntegral)
                            (fmap (fromIntegral . fromEnum) getChar)
 
------
-data SimState = SimState {input :: [Int8], output :: [Int8]}
+-- | State used by 'simulatorMachine' to evaluate code under the 'State' monad
+--
+-- It maintains input and output bytes inside lists
+data SimState =
+  SimState {input :: [Int8], -- ^ Input bytes to use when the program does @ "," @
+            output :: [Int8] -- ^ Store for the program outputs done with @ "." @
+           }
 
+-- | Extract the output stream from a 'simulatorMachine' state
 simStateOutput :: SimState -> [Int8]
 simStateOutput = reverse . output
 
+-- | Initial 'simulatorMachine' state
 emptyState :: SimState
 emptyState = SimState [] []
 
+-- | A 'Machine' that can evaluate program doing in-memory I/O under the 'State'
+-- monad. It stores state as 'SimState'
 simulatorMachine :: Machine (State SimState)
 simulatorMachine =
   Machine (\byte -> modify (writeByte byte))

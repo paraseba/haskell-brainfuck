@@ -14,7 +14,7 @@ module Parser (
        Program
      , Op(..)
      , parseProgram
-     , ParseError
+     , module Text.Parsec.Error
      ) where
 
 import Text.Parsec.Prim                  ((<|>), runP, skipMany)
@@ -27,13 +27,13 @@ import qualified Data.ByteString.Lazy as BS
 
 -- | Brainfuck operations
 data Op
-  = IncP      -- ^ Increment the byte pointer: ">"
-  | DecP      -- ^ Decrement the byte pointer: "<"
-  | Inc       -- ^ Increment the byte pointed by the pointer: "+"
-  | Dec       -- ^ Decrement the byte pointed by the pointer: "-"
-  | PutByte   -- ^ Write the byte pointed by the pointer (side-effect): "."
-  | GetByte   -- ^ Read a byte, write at the current location (side-effect): ","
-  | Loop [Op] -- ^ Loop over 'Op's untill current == 0: "[...]"
+  = IncP      -- ^ Increment the byte pointer: @ ">" @
+  | DecP      -- ^ Decrement the byte pointer: @ "<" @
+  | Inc       -- ^ Increment the byte pointed by the pointer: @ "+" @
+  | Dec       -- ^ Decrement the byte pointed by the pointer: @ "-" @
+  | PutByte   -- ^ Write the byte pointed by the pointer (side-effect): @ "." @
+  | GetByte   -- ^ Read a byte, write at the current location (side-effect): @ "," @
+  | Loop [Op] -- ^ Loop over 'Op's untill current @ == 0 @: @ "[...]" @
   deriving (Show,Eq)
 
 -- | A program is a list of 'Op's. One possible 'Op' is a 'Loop' of other 'Op's
