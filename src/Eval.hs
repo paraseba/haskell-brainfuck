@@ -4,7 +4,7 @@ module Eval (
   ,Machine(Machine)
   ,putByte, getByte
   ,defaultIOMachine
-  ,simulator, SimState (SimState), simStateOutput
+  ,simulatorMachine, SimState (SimState), simStateOutput
   ,emptyState
 
   -- exported from Tape
@@ -106,9 +106,10 @@ simStateOutput = reverse . output
 emptyState :: SimState
 emptyState = SimState [] []
 
-simulator :: Machine (State SimState)
-simulator = Machine (\byte -> modify (writeByte byte))
-                    (state readByte)
-            where  writeByte byte s@(SimState{output = o}) = s{output = byte : o}
-                   readByte s@(SimState{input = (byte:rest)}) = (byte, s{input = rest})
+simulatorMachine :: Machine (State SimState)
+simulatorMachine =
+  Machine (\byte -> modify (writeByte byte))
+          (state readByte)
+  where  writeByte byte s@(SimState{output = o}) = s{output = byte : o}
+         readByte s@(SimState{input = (byte:rest)}) = (byte, s{input = rest})
 

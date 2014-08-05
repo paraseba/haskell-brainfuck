@@ -12,7 +12,7 @@ import Tape
 import Eval
 
 evaluate :: Program -> Either BFExError BFTape
-evaluate p = evalState (eval simulator p) emptyState
+evaluate p = evalState (eval simulatorMachine p) emptyState
 
 evaluateSucc :: Program -> (BFTape -> Bool) -> Bool
 evaluateSucc p pred = either (const False) pred $ evaluate p
@@ -52,14 +52,14 @@ prop_PutByte :: Bool
 prop_PutByte =
   out == [0, 1, 2, 1]
   where program = [PutByte, Inc, PutByte, Inc, PutByte, Dec, PutByte]
-        res = execState (eval simulator program) emptyState
+        res = execState (eval simulatorMachine program) emptyState
         out = simStateOutput res
 
 prop_GetByte :: Bool
 prop_GetByte =
   out == [0, 42]
   where program = [PutByte, Inc, GetByte, PutByte]
-        res = execState (eval simulator program) (SimState [42] [])
+        res = execState (eval simulatorMachine program) (SimState [42] [])
         out = simStateOutput res
 
 prop_DecLoop :: Bool
@@ -70,14 +70,14 @@ prop_DecLoop =
         -- loop printing and decrementing
         -- dec and print once more when out of the loop
         program = replicate 42 Inc ++ [loop] ++ [Dec, PutByte]
-        res = execState (eval simulator program) emptyState
+        res = execState (eval simulatorMachine program) emptyState
         out = simStateOutput res
 
 prop_EvalString :: Bool
 prop_EvalString =
   out == [2]
   where program = "++."
-        res = execState (evalStr simulator program) emptyState
+        res = execState (evalStr simulatorMachine program) emptyState
         out = simStateOutput res
 
 -- taken from http://www.hevanet.com/cristofd/brainfuck/
@@ -91,7 +91,7 @@ prop_Squares :: Bool
 prop_Squares =
   outToString out == expected
   where program = squares
-        res = execState (evalStr simulator program) emptyState
+        res = execState (evalStr simulatorMachine program) emptyState
         out = simStateOutput res
         expected = concat [show (n*n) ++ "\n" | n <- [0..100]]
 
@@ -110,7 +110,7 @@ prop_WithInput :: (Positive Integer) -> Bool
 prop_WithInput (Positive n) =
   outToString out == expected
   where program = isOddCode
-        res = execState (evalStr simulator program)
+        res = execState (evalStr simulatorMachine program)
                         (SimState numDigits [])
         out = simStateOutput res
         numDigits = digits n ++ [fromIntegral (fromEnum '\n')]
