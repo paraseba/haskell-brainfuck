@@ -36,7 +36,7 @@ import qualified Parser as P
 import Tape (Tape(Tape), blankTape, BFTape, BFExError, errMsg, errTape, rTape, wTape, left, right, inc, dec)
 
 
-type TapeState m = StateT BFTape (ErrorT BFExError m)
+type ExecutionState m = StateT BFTape (ErrorT BFExError m)
 
 -- | Underlying input output for the evaluation machine. Changing the monad 'm'
 -- achives different results. For instance using the 'IO' monad an evaluator can
@@ -58,7 +58,7 @@ data Machine m =
 evalTape :: Monad m
          => Machine m
          -> P.Program
-         -> TapeState m ()
+         -> ExecutionState m ()
 evalTape m = mapM_ (evalOp m)
 
 
@@ -109,13 +109,13 @@ evalStr m = evalBS m . BSC.pack
 
 evolve :: Monad m
           => (BFTape -> m (Either BFExError BFTape))
-          -> TapeState m ()
+          -> ExecutionState m ()
 evolve g = StateT $ ErrorT . (>>= return . liftM ((),)) . g
 
 evalOp :: Monad m
        => Machine m
        -> P.Op
-       -> TapeState m ()
+       -> ExecutionState m ()
 
 evalOp _ P.IncP = evolve $ return . right
 evalOp _ P.DecP = evolve $ return . left
