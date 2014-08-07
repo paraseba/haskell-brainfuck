@@ -1,4 +1,4 @@
-{-|
+{- |
 Module      : Main
 Description : Evaluate a BrainFuck program
 Copyright   : (c) Sebastian Galkin, 2014
@@ -16,10 +16,15 @@ of parsing or execution errors it reports them to stderr
 -}
 
 import Eval
-  ( evalBS, EvalResult(EvalSuccess,EvalExecError,EvalParseError)
-  , defaultIOMachine, BFExError, Tape(Tape), BFTape, errMsg, errTape, rTape)
-import System.Exit (ExitCode(..), exitWith)
-import System.Environment (getArgs, getProgName)
+  ( evalBS, EvalResult ( EvalSuccess, EvalExecError, EvalParseError )
+  , defaultIOMachine, BFExError, Tape ( Tape ), BFTape, errMsg, errTape, rTape )
+
+import System.Exit
+  ( ExitCode (..), exitWith )
+
+import System.Environment
+  ( getArgs, getProgName )
+
 import qualified Data.ByteString.Lazy as BS
 
 main :: IO ExitCode
@@ -30,8 +35,8 @@ main =
     reportResults           >>=
     exitWith
 
--- | Read command line and obtain the path to the program. Display error message
--- if missing argument
+{- | Read command line and obtain the path to the program. Display error message
+ - if missing argument -}
 getProgram :: IO FilePath
 getProgram = do
   args <- getArgs
@@ -57,13 +62,13 @@ reportResults (EvalExecError err) = do
   putStrLn $ "Consumed tape: " ++ (showConsumed . errTape) err
   return $ ExitFailure 2
 
--- | Use heuristic to display tape state. It estimates consumed right tape by
--- calling 'consumed'
+{- | Use heuristic to display tape state. It estimates consumed right tape by
+ - calling 'consumed' -}
 showConsumed :: BFTape -> String
 showConsumed (Tape _ _ r) =
-  "[" ++ concatMap ((++ ",") . show) (consumed r ++ [0,0,0]) ++ "..."
+  "[" ++ concatMap ( (++ ",") . show ) (consumed r ++ [0, 0, 0]) ++ "..."
 
 -- | Return consumed tape by assuming that it is unused after 10 zeros.
 consumed :: (Eq a, Num a) => [a] -> [a]
-consumed (0:0:0:0:0:0:0:0:0:0:_) = []
-consumed (x:xs) = x : consumed xs
+consumed (0 : 0 : 0 : 0 : 0 : 0 : 0 : 0 : 0 : 0 : _) = []
+consumed (x : xs) = x : consumed xs
