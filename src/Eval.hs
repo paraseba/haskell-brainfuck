@@ -16,8 +16,7 @@ This module should be all library users need to import.
 module Eval (
     eval, evalBS, evalStr
   , EvalResult (..)
-  , Machine (Machine)
-  , putByte, getByte
+  , Machine (..)
   , defaultIOMachine
   , simulatorMachine, SimState (SimState), simStateOutput
   , emptyState
