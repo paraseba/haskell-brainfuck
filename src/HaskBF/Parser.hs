@@ -1,7 +1,7 @@
 {-# OPTIONS_HADDOCK show-extensions #-}
 
 {- |
-Module      : Parser
+Module      : HaskBF.Parser
 Description : Parse brainfuck program into a Program abstract datatype
 Copyright   : (c) Sebastian Galkin, 2014
 License     : MIT
@@ -10,7 +10,7 @@ Stability   : experimental
 
 -}
 
-module Parser (
+module HaskBF.Parser (
        Program
      , Op (..)
      , parseProgram

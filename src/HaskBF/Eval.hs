@@ -1,5 +1,5 @@
 {- |
-Module      : Eval
+Module      : HaskBF.Eval
 Description : Evaluate a BrainFuck program
 Copyright   : (c) Sebastian Galkin, 2014
 License     : MIT
@@ -13,7 +13,7 @@ instances of 'EvalResult'
 This module should be all library users need to import.
 -}
 
-module Eval (
+module HaskBF.Eval (
     eval, evalBS, evalStr
   , EvalResult (..)
   , Machine (..)
@@ -21,8 +21,8 @@ module Eval (
   , simulatorMachine, SimState (SimState), simStateOutput
   , emptyState
 
-  , module Tape
-  , module Parser
+  , module HaskBF.Tape
+  , module HaskBF.Parser
 ) where
 
 import Data.Int
@@ -39,12 +39,13 @@ import Control.Monad.Error
 
 import qualified Data.ByteString.Lazy as BS
 import qualified Data.ByteString.Lazy.Char8 as BSC
-import qualified Parser as P
 
-import Parser
+import qualified HaskBF.Parser as P
+
+import HaskBF.Parser
   ( ParseError )
 
-import Tape
+import HaskBF.Tape
   ( Tape ( Tape ), blankTape, BFTape, BFExError, errMsg
   , errTape, rTape, wTape, left, right, inc, dec)
 

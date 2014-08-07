@@ -29,7 +29,7 @@ source-repository head
 
 library
     exposed-modules:
-      Parser, Tape, Eval
+      HaskBF.Parser, HaskBF.Tape, HaskBF.Eval
     hs-source-dirs: src/
     build-depends:       base >=4.7 && <4.8
                          ,bytestring

@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 
 {- |
-Module      : Tape
+Module      : HaskBF.Tape
 Description : Implement the brainfuck tape
 Copyright   : (c) Sebastian Galkin, 2014
 License     : MIT
@@ -13,7 +13,7 @@ the concept of a pointer, and the pointer can be incremented or decremented.
 
 -}
 
-module Tape (
+module HaskBF.Tape (
   Tape (Tape)
   , ExecutionError (errMsg, errTape)
   , rTape, wTape

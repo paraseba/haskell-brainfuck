@@ -17,7 +17,7 @@ of parsing or execution errors it reports them to stderr
 
 module Main(main) where
 
-import Eval
+import HaskBF.Eval
   ( evalBS, EvalResult ( EvalSuccess, EvalExecError, EvalParseError )
   , defaultIOMachine, BFExError, Tape ( Tape ), BFTape, errMsg, errTape, rTape )
 

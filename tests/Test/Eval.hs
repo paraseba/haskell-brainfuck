@@ -1,15 +1,14 @@
 module Test.Eval (properties) where
 
 import Test.QuickCheck
-import Debug.Trace
 import Control.Monad.State
 import Data.Int (Int8)
 import Data.Char (chr)
 
 import Test.Helper
-import Parser
-import Tape
-import Eval
+import HaskBF.Parser
+import HaskBF.Tape
+import HaskBF.Eval
 
 evaluate :: Program -> Either BFExError BFTape
 evaluate p = evalState (eval simulatorMachine p) emptyState

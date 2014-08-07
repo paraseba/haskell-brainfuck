@@ -8,7 +8,7 @@ import Data.Either
 import Control.Monad (liftM3)
 import Control.Applicative ((<$>))
 
-import Parser
+import HaskBF.Parser
 import Test.Helper
 
 instance Arbitrary Op where

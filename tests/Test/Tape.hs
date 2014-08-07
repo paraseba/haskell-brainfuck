@@ -6,10 +6,9 @@ import Test.QuickCheck
 import Control.Monad (liftM3, (>=>))
 import Data.Int (Int8)
 import Data.Either (isLeft)
-import Debug.Trace
 
 import Test.Helper
-import Tape
+import HaskBF.Tape
 
 instance Arbitrary (Tape Int8) where
   arbitrary = liftM3 Tape arbitrary arbitrary arbitrary
