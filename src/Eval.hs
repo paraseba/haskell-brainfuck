@@ -32,8 +32,7 @@ import Control.Monad
   ( liftM, when )
 
 import Control.Monad.State
-  ( State, modify, state, StateT ( StateT )
-  , execStateT, get, put, mapStateT )
+  ( State, modify, state, StateT ( StateT ), execStateT, get)
 
 import Control.Monad.Error
   ( ErrorT ( ErrorT ), runErrorT )
@@ -143,11 +142,11 @@ evalOp _ P.DecP = evolve $ return . left
 evalOp _ P.Inc  = evolve $ return . Right . inc
 evalOp _ P.Dec  = evolve $ return . Right . dec
 
-evalOp ( Machine { putByte = putByte } ) P.PutByte =
-  evolve $ \ tape -> liftM ( const ( Right tape ) ) $ ( putByte . rTape ) tape
+evalOp ( Machine { putByte = putB } ) P.PutByte =
+  evolve $ \ tape -> liftM ( const ( Right tape ) ) $ ( putB . rTape ) tape
 
-evalOp ( Machine {getByte = getByte } ) P.GetByte =
-  evolve $ \ tape -> liftM ( Right . flip wTape tape ) getByte
+evalOp ( Machine {getByte = getB } ) P.GetByte =
+  evolve $ \ tape -> liftM ( Right . flip wTape tape ) getB
 
 evalOp machine (P.Loop ops) = do
   tape <- get
@@ -189,4 +188,5 @@ simulatorMachine =
           (state readByte)
   where writeByte byte s@(SimState {output = o} ) = s {output = byte : o}
         readByte s@(SimState {input = (byte : rest)}) = (byte, s {input = rest})
+        readByte _ = error "Not enough input available"
 

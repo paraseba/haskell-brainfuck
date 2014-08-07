@@ -75,6 +75,7 @@ simpleOp = fmap build simpleChar
         build '-' = Dec
         build '.' = PutByte
         build ',' = GetByte
+        build _   = error "Unknown character" -- this should never happen
 
 loop :: Parser Op
 loop = Loop <$> between (char '[') (char ']') program
