@@ -23,7 +23,7 @@ import System.Environment (getArgs, getProgName)
 import qualified Data.ByteString.Lazy as BS
 
 main :: IO ExitCode
-main = do
+main =
   getProgram                >>=
     BS.readFile             >>=
     evalBS defaultIOMachine >>=
@@ -47,8 +47,8 @@ reportResults :: EvalResult -> IO ExitCode
 reportResults (EvalSuccess _) = return ExitSuccess
 
 reportResults (EvalParseError parseError) = do
-  putStrLn $ "Error parsing program:"
-  putStrLn $ show parseError
+  putStrLn "Error parsing program:"
+  print parseError
   return $ ExitFailure 1
 
 reportResults (EvalExecError err) = do

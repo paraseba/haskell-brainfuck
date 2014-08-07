@@ -21,7 +21,7 @@ prop_DecSubstracts :: Tape Int8 -> Property
 prop_DecSubstracts t = rTape t > minBound ==> (rTape . dec) t == rTape t - 1
 
 applyN :: Int -> (a -> a) -> a -> a
-applyN n f t = (iterate f t) !! n
+applyN n f t = iterate f t !! n
 
 applyNM :: Monad m => Int -> (a -> m a) -> a -> m a
 applyNM 1 k a = k a
@@ -57,7 +57,7 @@ prop_LeftRightBeyondLimits (Positive n) tape@(Tape leftL _ _) =
 
 prop_BlankTapeCanGoRight :: Bool
 prop_BlankTapeCanGoRight =
-  either (const False) ((==0) . rTape) $ applyNM 100 right $ blankTape
+  either (const False) ((==0) . rTape) $ applyNM 100 right blankTape
 
 prop_BlankTapeCantGoLeft :: Positive Int -> Bool
 prop_BlankTapeCantGoLeft (Positive n) =

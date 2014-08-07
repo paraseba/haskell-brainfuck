@@ -6,6 +6,7 @@ import Test.QuickCheck
 import Data.ByteString.Lazy.Char8 (pack)
 import Data.Either
 import Control.Monad (liftM3)
+import Control.Applicative ((<$>))
 
 import Parser
 import Test.Helper
@@ -33,7 +34,7 @@ sizedCode 0 = fmap Code $ listOf $ frequency [ (20, elements "+-")
                                              ]
 sizedCode n | n>0 = liftM3 (\a b c -> Code $ unCode a ++ unCode b ++ unCode c)
                            (sizedCode n'')
-                           (fmap (Code . (\s->"[" ++ s ++ "]") . unCode) $ sizedCode n')
+                           (Code . (\s->"[" ++ s ++ "]") . unCode <$> sizedCode n')
                            (sizedCode n'')
   where n'  = n  `div` 2
         n'' = n' `div` 2
@@ -46,7 +47,7 @@ prop_CanParseGenericProgram = isRight . parseProgram . pack . unCode
 
 prop_CantParseBadSymbols :: Code -> Code -> Bool
 prop_CantParseBadSymbols c1 c2 =
-  (isLeft . parseProgram . pack) $ unCode c1 ++ ['~'] ++ unCode c2
+  (isLeft . parseProgram . pack) $ unCode c1 ++ "~" ++ unCode c2
 
 prop_ParseBlanks :: Bool
 prop_ParseBlanks =
@@ -59,10 +60,10 @@ prop_GoodLoop =
   either (const False) (==expected) $ parseProgram input
   where input = pack "\n   + [+><-\n [-+]\n - ]   +  \n"
         expected = [ Inc
-                    ,(Loop [ Inc, IncP, DecP, Dec
-                            ,(Loop [Dec, Inc])
-                            ,Dec
-                           ])
+                    ,Loop [ Inc, IncP, DecP, Dec
+                          , Loop [Dec, Inc]
+                          , Dec
+                          ]
                     ,Inc]
 
 properties :: [(String, Prop)]

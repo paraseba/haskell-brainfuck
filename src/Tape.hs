@@ -68,7 +68,7 @@ dec = update (+(-1))
 -- | Type for execution errors, trying to move the tape beyond one of its
 -- ends. The 'String' argument is the error message and the 'Tape' is in
 -- the state right before the faulting operation
-data ExecutionError a = ExecutionError {errMsg :: String,  errTape :: (Tape a)}
+data ExecutionError a = ExecutionError {errMsg :: String,  errTape :: Tape a}
 
 -- | Move the pinter to the right
 right :: Tape a  -- ^ The tape

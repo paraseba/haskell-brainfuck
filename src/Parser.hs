@@ -22,7 +22,7 @@ import Text.Parsec.Combinator            (between, sepEndBy, eof)
 import Text.Parsec.Error                 (ParseError)
 import Text.Parsec.ByteString.Lazy       (Parser)
 import Text.Parsec.Char                  (space, spaces, char)
-import Control.Applicative               ((<*))
+import Control.Applicative               ((<*), (<$>))
 import qualified Data.ByteString.Lazy as BS
 
 -- | Brainfuck operations
@@ -64,8 +64,8 @@ simpleOp = fmap build simpleChar
         build ',' = GetByte
 
 loop :: Parser Op
-loop = fmap Loop $ between (char '[') (char ']') program
+loop = Loop <$> between (char '[') (char ']') program
 
 -- | Parse program stream. Returns an error or the parsed 'Program'
 parseProgram :: BS.ByteString -> Either ParseError Program
-parseProgram s = runP fullProgram () "" s
+parseProgram = runP fullProgram () ""

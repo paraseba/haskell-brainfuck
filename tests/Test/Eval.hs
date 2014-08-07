@@ -32,7 +32,7 @@ prop_IncrementsDecrements (Positive incs) (Positive decs) =
 
 prop_simpleProgram :: Bool
 prop_simpleProgram =
-  evaluateSucc program $ \(Tape prev current next) -> current == 1 && next !! 0 == 4
+  evaluateSucc program $ \(Tape prev current next) -> current == 1 && head next == 4
   where program = [Inc, Inc,             -- +2
                    IncP,Inc,Inc,Inc,Inc, -- right +4
                    DecP,Dec              -- left -1
@@ -64,8 +64,8 @@ prop_GetByte =
 
 prop_DecLoop :: Bool
 prop_DecLoop =
-  out == [42,41..1] ++ [(-1)]
-  where loop = (Loop [PutByte, Dec])  -- print and dec
+  out == [42,41..1] ++ [-1]
+  where loop = Loop [PutByte, Dec]  -- print and dec
         -- start with pointer -> 42
         -- loop printing and decrementing
         -- dec and print once more when out of the loop
@@ -81,7 +81,7 @@ prop_EvalString =
         out = simStateOutput res
 
 -- taken from http://www.hevanet.com/cristofd/brainfuck/
-squares :: [Char]
+squares :: String
 squares = "++++[>+++++<-]>[<+++++>-]+<+[\n    >[>+>+<<-]++>>[<<+>>-]>>>[-]++>[-]+\n    >>>+[[-]++++++>>>]<<<[[<++++++++<++>>-]+<.<[>----<-]<]\n    <<[>>>>>[>>>[-]+++++++++<[>-<-]+++++++++>[-[<->-]+[<<<]]<[>+<-]>]<<-]<<-\n]\n"
 
 outToString :: [Int8] -> String
@@ -96,7 +96,7 @@ prop_Squares =
         expected = concat [show (n*n) ++ "\n" | n <- [0..100]]
 
 -- taken from http://rosettacode.org/wiki/Even_or_odd
-isOddCode :: [Char]
+isOddCode :: String
 isOddCode = " ,[>,----------]\n++<\n[->-[>+>>]>\n[+[-<+>]>+>>]\n<<<<<]\n>[-]<++++++++\n[>++++++<-]\n>[>+<-]>.\n"
 
 digits :: Integer -> [Int8]
@@ -106,7 +106,7 @@ digits = reverse . digitsRev
           _ -> fromIntegral lastDigit : digitsRev rest
           where (rest, lastDigit) = quotRem i 10
 
-prop_WithInput :: (Positive Integer) -> Bool
+prop_WithInput :: Positive Integer -> Bool
 prop_WithInput (Positive n) =
   outToString out == expected
   where program = isOddCode

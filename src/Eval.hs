@@ -9,6 +9,8 @@ Stability   : experimental
 This module exports functions that allow to evaluate a BrainFuck program.
 Evaluation supports two types of error, parsing and execution, by returning
 instances of 'EvalResult'
+
+This module should be all library users need to import.
 -}
 
 module Eval (
@@ -24,16 +26,18 @@ module Eval (
   ,module Parser
 ) where
 
-import Data.Int (Int8)
-import Control.Monad (liftM)
-import Control.Monad.State (State, modify, state, StateT(StateT), execStateT, get, put, mapStateT)
-import qualified Data.ByteString.Lazy as BS
-import qualified Data.ByteString.Lazy.Char8 as BSC
-import Control.Monad.Error
+import Data.Int            (Int8)
+import Control.Monad       (liftM, when)
+import Control.Monad.State ( State, modify, state, StateT(StateT)
+                           , execStateT, get, put, mapStateT)
+import qualified           Data.ByteString.Lazy as BS
+import qualified           Data.ByteString.Lazy.Char8 as BSC
+import Control.Monad.Error ( ErrorT(ErrorT), runErrorT )
 
-import Parser (ParseError)
-import qualified Parser as P
-import Tape (Tape(Tape), blankTape, BFTape, BFExError, errMsg, errTape, rTape, wTape, left, right, inc, dec)
+import Parser              ( ParseError )
+import qualified           Parser as P
+import Tape                ( Tape(Tape), blankTape, BFTape, BFExError, errMsg
+                           , errTape, rTape, wTape, left, right, inc, dec)
 
 
 type ExecutionState m = StateT BFTape (ErrorT BFExError m)
@@ -130,9 +134,8 @@ evalOp (Machine{getByte = getByte}) P.GetByte =
 
 evalOp machine (P.Loop ops) = do
   tape <- get
-  if (rTape tape == 0)
-  then return ()
-  else evalTape machine ops >> evalOp machine (P.Loop ops)
+  when (rTape tape /= 0) $
+    evalTape machine ops >> evalOp machine (P.Loop ops)
 
 
 -- | A 'Machine' that can evaluate code under the 'IO' monad by doing I/O
@@ -163,7 +166,7 @@ emptyState = SimState [] []
 -- monad. It stores state as 'SimState'
 simulatorMachine :: Machine (State SimState)
 simulatorMachine =
-  Machine (\byte -> modify (writeByte byte))
+  Machine (modify . writeByte)
           (state readByte)
   where  writeByte byte s@(SimState{output = o}) = s{output = byte : o}
          readByte s@(SimState{input = (byte:rest)}) = (byte, s{input = rest})
