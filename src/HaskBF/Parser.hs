@@ -64,8 +64,12 @@ operation :: Parser Op
 operation = simpleOp <|> loop
 
 simpleChar :: Parser Char
-simpleChar = (char '>') <|> (char '<') <|> (char '+') <|>
-             (char '-') <|> (char '.') <|> (char ',')
+simpleChar = char '>' <|>
+             char '<' <|>
+             char '+' <|>
+             char '-' <|>
+             char '.' <|>
+             char ','
 
 simpleOp :: Parser Op
 simpleOp = fmap build simpleChar

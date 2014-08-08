@@ -1,8 +1,6 @@
 module Test.Helper
- ( module Test.Tasty
- , module Test.Tasty.TH
- , module Test.Tasty.QuickCheck ) where
+ ( module Tasty ) where
 
-import Test.Tasty
-import Test.Tasty.TH
-import Test.Tasty.QuickCheck
+import Test.Tasty            as Tasty
+import Test.Tasty.TH         as Tasty
+import Test.Tasty.QuickCheck as Tasty
