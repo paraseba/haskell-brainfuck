@@ -39,5 +39,11 @@ main = do
 brainfuck fib.bf
 ```
 
+## Tests
+You can run the test suite with
+```bash
+cabal test
+```
+
 ## Documentation
 http://paraseba.github.io/haskell-brainfuck/

@@ -1,12 +1,8 @@
-{-# LANGUAGE ExistentialQuantification #-}
+module Test.Helper
+ ( module Test.Tasty
+ , module Test.Tasty.TH
+ , module Test.Tasty.QuickCheck ) where
 
-module Test.Helper ( Prop(Prop) ) where
-
-import Test.QuickCheck (Testable, property, exhaustive)
-
-data Prop = forall t. Testable t => Prop t
-
-instance Testable Prop where
-  property (Prop t) = property t
-  exhaustive (Prop t) = exhaustive t
-
+import Test.Tasty
+import Test.Tasty.TH
+import Test.Tasty.QuickCheck

@@ -1,14 +1,16 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module Test.Tape (properties) where
+module Test.Tape (tests) where
 
 import Test.QuickCheck
 import Control.Monad (liftM3, (>=>))
 import Data.Int (Int8)
 import Data.Either (isLeft)
 
-import Test.Helper
 import HaskBF.Tape
+import Test.Helper
+
+tests = $(testGroupGenerator)
 
 instance Arbitrary (Tape Int8) where
   arbitrary = liftM3 Tape arbitrary arbitrary arbitrary
@@ -61,16 +63,3 @@ prop_BlankTapeCanGoRight =
 prop_BlankTapeCantGoLeft :: Positive Int -> Bool
 prop_BlankTapeCantGoLeft (Positive n) =
   isLeft $ applyNM n left blankTape
-
-properties :: [(String, Prop)]
-properties =
-  [ ("inc adds to current", Prop prop_IncAdds)
-   ,("dec substracts from current", Prop prop_DecSubstracts)
-   ,("dec n inc n ", Prop prop_IncDec)
-   ,("right n left n, with n<=length ", Prop prop_RightLeftWithinLimits)
-   ,("right n left n, with n>length ", Prop prop_RightLeftBeyondLimits)
-   ,("left n right n, with n<=length ", Prop prop_LeftRightWithinLimits)
-   ,("left n right n, with n>length ", Prop prop_LeftRightBeyondLimits)
-   ,("blank tape is blank to the right", Prop prop_BlankTapeCanGoRight)
-   ,("blank tape is at leftmost position", Prop prop_BlankTapeCantGoLeft)
-  ]

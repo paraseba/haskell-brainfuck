@@ -1,14 +1,16 @@
-module Test.Eval (properties) where
+module Test.Eval (tests) where
 
 import Test.QuickCheck
 import Control.Monad.State
 import Data.Int (Int8)
 import Data.Char (chr)
 
-import Test.Helper
 import HaskBF.Parser
 import HaskBF.Tape
 import HaskBF.Eval
+import Test.Helper
+
+tests = $(testGroupGenerator)
 
 evaluate :: Program -> Either BFExError BFTape
 evaluate p = evalState (eval simulatorMachine p) emptyState
@@ -115,18 +117,3 @@ prop_WithInput (Positive n) =
         numDigits = digits n ++ [fromIntegral (fromEnum '\n')]
         -- The program returns the string 1 for odd numbers and 0 for even
         expected = if odd n then "1" else "0"
-
-properties :: [(String, Prop)]
-properties =
-  [ ("eval empty program", Prop prop_EmptyProgram)
-   ,("eval incs and decs", Prop prop_IncrementsDecrements)
-   ,("eval simple inc and shift program", Prop prop_simpleProgram)
-   ,("eval left overflow program", Prop prop_tapeOverflow)
-   ,("eval put byte", Prop prop_PutByte)
-   ,("eval get byte", Prop prop_GetByte)
-   ,("eval simple decrementing loop", Prop prop_DecLoop)
-
-   ,("eval string", Prop prop_EvalString)
-   ,("eval squares program", Prop prop_Squares)
-   ,("eval program with input", Prop prop_WithInput)
-  ]

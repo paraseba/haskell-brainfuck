@@ -1,6 +1,6 @@
 {-# LANGUAGE ExistentialQuantification, TypeSynonymInstances, FlexibleInstances #-}
 
-module Test.Parser (properties) where
+module Test.Parser (tests) where
 
 import Test.QuickCheck
 import Data.ByteString.Lazy.Char8 (pack)
@@ -10,6 +10,8 @@ import Control.Applicative ((<$>))
 
 import HaskBF.Parser
 import Test.Helper
+
+tests = $(testGroupGenerator)
 
 instance Arbitrary Op where
   arbitrary = frequency [(6, elements [IncP,DecP,Inc,Dec,PutByte,GetByte])
@@ -65,13 +67,3 @@ prop_GoodLoop =
                           , Dec
                           ]
                     ,Inc]
-
-properties :: [(String, Prop)]
-properties =
-  [ ("parse empty", Prop prop_ParseEmptyProgram)
-   ,("parse simple ops", Prop prop_BasicProgram)
-   ,("parse arbitrary program", Prop prop_CanParseGenericProgram)
-   ,("can't parse bad symbols program", Prop prop_CantParseBadSymbols)
-   ,("parses spaces and newlines", Prop prop_ParseBlanks)
-   ,("parses loops", Prop prop_GoodLoop)
-  ]
