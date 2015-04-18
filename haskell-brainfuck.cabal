@@ -6,7 +6,7 @@ synopsis: BrainFuck interpreter
 description: BrainFuck language interpreter.
              Provides a library for evaluation and an executable to evaluate
              brainfuck files. Evaluation happens under an arbitrary monad so
-             programn can be evaluated doing I/O to stdin/stdout or in memory
+             programn can be evaluated doing I\/O to stdin\/stdout or in memory
              using the State monad.
 
 license:             MIT
